@@ -41,6 +41,11 @@ import Discoverer from "@/adapters/supabase/discoverer";
 import generateName from '@/entities/namer';
 
 const styles = {
+  solo: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
   users: {
     listStyle: 'none',
     padding: 0,
@@ -53,24 +58,38 @@ const styles = {
 
 export default function Users() {
   const [users, setUsers] = react.useState<User[]>([]);
+  const [name, setName] = react.useState<string>('pending...');
 
   react.useEffect(() => {
     let discoverer: IDiscoverer = new Discoverer((users: User[]) => { console.log('Users joined: ', users); },
       (users: User[]) => { console.log('Users left: ', users); },
       (users: User[]) => { setUsers(users); });
 
-    const name = generateName();
-    discoverer.join({ name: name, online_since: new Date() });
+    const newName = generateName();
+    setName(newName);
+    discoverer.join({ name: newName, online_since: new Date() });
 
     return () => { discoverer.leave(); };
   }, []);
+
+  if (0 === users.length) {
+    return (
+      <>
+        <p style={styles.solo}> Waiting for more users to connect... </p>
+      </>
+    );
+  }
 
   return (
     <>
       <ul style={styles.users}>
         {
           users.map((user: User, index: number) => {
-            return (<li key={index} >{`${user.name} (${user.online_since})`}</li>);
+            if (user.name !== name) {
+              return (<li key={index} >{`${user.name} (${user.online_since})`}</li>);
+            } else {
+              return null;
+            }
           })
         }
       </ul>
