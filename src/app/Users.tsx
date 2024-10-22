@@ -41,18 +41,23 @@ import Discoverer from "@/adapters/supabase/discoverer";
 import generateName from '@/entities/namer';
 
 const styles = {
-  solo: {
+  content: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center'
+  },
+  name: {
+    display: 'inline',
+    marginBottom: '2em',
+  },
+  solo: {
+    display: 'inline'
   },
   users: {
     listStyle: 'none',
     padding: 0,
     margin: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
+    textAlign: 'center'
   }
 } as const;
 
@@ -72,27 +77,29 @@ export default function Users() {
     return () => { discoverer.leave(); };
   }, []);
 
-  if (0 === users.length) {
-    return (
-      <>
-        <p style={styles.solo}> Waiting for more users to connect... </p>
-      </>
-    );
-  }
-
   return (
     <>
-      <ul style={styles.users}>
+      <div style={styles.content}>
+        <p style={styles.name}>Your user name is <strong>{name}</strong></p>
         {
-          users.map((user: User, index: number) => {
-            if (user.name !== name) {
-              return (<li key={index} >{`${user.name} (${user.online_since})`}</li>);
-            } else {
-              return null;
-            }
-          })
+          1 >= users.length ? (
+            <p style={styles.solo}> Waiting for more users to connect... </p>
+          ) : (
+            <ul style={styles.users}>
+              {
+                users.map((user: User, index: number) => {
+                  if (user.name !== name) {
+                    return (<li key={index} >{user.name}</li>);
+                  } else {
+                    return null;
+                  }
+                })
+              }
+            </ul>
+          )
         }
-      </ul>
+
+      </div>
     </>
   );
 }
