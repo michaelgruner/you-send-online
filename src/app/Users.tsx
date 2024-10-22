@@ -38,6 +38,8 @@ import react from 'react'
 import User from "@/entities/user";
 import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
+import IMessenger from "@/entities/imessenger";
+import Messenger from "@/adapters/supabase/messenger";
 import generateName from '@/entities/namer';
 
 const styles = {
@@ -63,33 +65,51 @@ const styles = {
 
 export default function Users() {
   const [users, setUsers] = react.useState<User[]>([]);
-  const [name, setName] = react.useState<string>('pending...');
+  const [user, setUser] = react.useState<User>({ name: 'pending...', online_since: new Date() });
+  const [messenger, setMessenger] = react.useState<IMessenger | null>(null);
 
   react.useEffect(() => {
-    let discoverer: IDiscoverer = new Discoverer((users: User[]) => { console.log('Users joined: ', users); },
+    const thisUser: User = {
+      name: generateName(),
+      online_since: new Date()
+    };
+
+    const discoverer: IDiscoverer = new Discoverer(
+      (users: User[]) => { console.log('Users joined: ', users); },
       (users: User[]) => { console.log('Users left: ', users); },
-      (users: User[]) => { setUsers(users); });
+      (users: User[]) => { setUsers(users); }
+    );
 
-    const newName = generateName();
-    setName(newName);
-    discoverer.join({ name: newName, online_since: new Date() });
+    setUser(thisUser);
+    discoverer.join(thisUser);
 
-    return () => { discoverer.leave(); };
+    setMessenger(new Messenger(thisUser, (from: User, message: string) => {
+      console.log(`Received message from ${from.name}: ${message}`);
+    }));
+
+    return () => {
+      discoverer.leave();
+      messenger?.disconnect();
+    };
   }, []);
+
+  const sayHi = (to: User) => {
+    messenger?.sendMessage(to, `Greetings from ${user.name}`);
+  }
 
   return (
     <>
       <div style={styles.content}>
-        <p style={styles.name}>Your user name is <strong>{name}</strong></p>
+        <p style={styles.name}>Your user name is <strong>{user.name}</strong></p>
         {
           1 >= users.length ? (
             <p style={styles.solo}> Waiting for more users to connect... </p>
           ) : (
             <ul style={styles.users}>
               {
-                users.map((user: User, index: number) => {
-                  if (user.name !== name) {
-                    return (<li key={index} >{user.name}</li>);
+                users.map((otherUser: User, index: number) => {
+                  if (otherUser.name !== user.name) {
+                    return (<li key={index} onClick={() => { sayHi(otherUser); }}>{otherUser.name}</li>);
                   } else {
                     return null;
                   }

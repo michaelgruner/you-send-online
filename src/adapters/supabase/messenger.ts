@@ -31,70 +31,62 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import IDiscoverer, { OnJoinCallback, OnLeaveCallback, OnSyncCallback, CHANNEL } from "@/entities/idiscoverer";
+import IMessenger, { OnMessageCallback } from "@/entities/imessenger";
 import User from "@/entities/user";
+import client from './client'
 
-import client from './client';
+type Payload = {
+  from: User;
+  message: string;
+};
 
-class Discoverer implements IDiscoverer {
-  onJoin: OnJoinCallback;
-  onLeave: OnLeaveCallback;
-  onSync: OnSyncCallback;
+type BroadcastEvent = {
+  event: string;
+  type: string;
+  payload: Payload;
+};
 
-  join(user: User) {
-    this.room.subscribe(async (status) => {
-      if (status !== 'SUBSCRIBED') {
-        return;
+class Messenger implements IMessenger {
+  onMessage: OnMessageCallback;
+
+  sendMessage(to: User, message: string): void {
+    const otherRoom = client.channel(to.name);
+    otherRoom.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: {
+        from: this.user,
+        message: message
       }
-
-      await this.room.track(user);
     });
   }
 
-  leave() {
-    const untrack = async () => {
-      await this.room.untrack()
-    }
+  constructor(user: User, onMessage: OnMessageCallback) {
+    this.onMessage = onMessage;
+    this.user = user;
 
-    untrack();
+    this.room = client.channel(this.user.name);
+
+    this.room
+      .on(
+        'broadcast',
+        { event: 'message' },
+        (payload) => this.onMessageInternal(payload as any)
+      )
+      .subscribe();
+  }
+
+  disconnect() : void {
     this.room.unsubscribe();
   }
 
-  constructor(onJoin: OnJoinCallback, onLeave: OnLeaveCallback, onSync: OnSyncCallback) {
-    this.onJoin = onJoin;
-    this.onLeave = onLeave;
-    this.onSync = onSync;
-
-    this.room = client.channel(CHANNEL);
-
-    this.room
-      .on('presence', { event: 'sync' }, () => {
-        const newState = this.room.presenceState<User>();
-        const presences: User[] = Object.values(newState).flat();
-
-        const users = this.onEvent(presences);
-        this.onSync(users);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: User[] }) => {
-        const users = this.onEvent(newPresences);
-        this.onJoin(users);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: User[] }) => {
-        const users = this.onEvent(leftPresences);
-        this.onJoin(users);
-      });
-  }
-
+  private user: User;
   private room;
 
-  private onEvent(presences: User[]): User[] {
-    const users: User[] = presences.map(user => ({
-      name: user.name,
-      online_since: new Date(user.online_since)
-    }));
-
-    return users;
+  private onMessageInternal (event: BroadcastEvent) {
+    this.onMessage(event.payload.from, event.payload.message);
   }
+
 };
 
-export default Discoverer;
+export default Messenger;
