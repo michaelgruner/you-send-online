@@ -13,6 +13,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv env.d.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.6",
     "next": "14.2.5",
     "react": "^18",
     "react-dom": "^18"
@@ -26,6 +27,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "eslint-plugin-next-on-pages": "^1.13.5",
+    "supabase": "^1.204.3",
     "typescript": "^5",
     "vercel": "^37.11.0",
     "wrangler": "^3.81.0"
