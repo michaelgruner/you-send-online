@@ -38,6 +38,7 @@ import react from 'react'
 import User from "@/entities/user";
 import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
+import generateName from '@/entities/namer';
 
 const styles = {
   users: {
@@ -58,7 +59,8 @@ export default function Users() {
       (users: User[]) => { console.log('Users left: ', users); },
       (users: User[]) => { setUsers(users); });
 
-    discoverer.join({ name: "Michael", online_since: new Date() });
+    const name = generateName();
+    discoverer.join({ name: name, online_since: new Date() });
 
     return () => { discoverer.leave(); };
   }, []);
