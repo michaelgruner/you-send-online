@@ -42,17 +42,30 @@ const styles = {
     alignItems: 'center'
   },
   name: {
-    display: 'inline',
     marginBottom: '2em',
+  },
+  nameAccent: {
+    fontWeight: 'bold',
   },
   solo: {
     display: 'inline'
   },
   users: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
-    textAlign: 'center'
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    listStyleType: 'none',
+    padding: '0',
+    margin: '0',
+    width: '50%',
+    borderRadius: '10px',
+  },
+  user: {
+    cursor: 'pointer',
+    backgroundColor: 'var(--color-secondary)',
+    padding: '0.5em',
+    textAlign: 'center',
+    border: '1px solid #ddd',
   }
 } as const;
 
@@ -67,7 +80,7 @@ export default function Users({ users, user, onUserClicked }: Props) {
   return (
     <>
       <div style={styles.content}>
-        <p style={styles.name}>Your user name is <strong>{user.name}</strong></p>
+        <p style={styles.name}>Your user name is <span style={styles.nameAccent}>{user.name}</span></p>
         {
           1 >= users.length ? (
             <p style={styles.solo}> Waiting for more users to connect... </p>

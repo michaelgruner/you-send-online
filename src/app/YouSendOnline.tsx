@@ -70,7 +70,7 @@ export default function YouSendOnline({ children }: Props) {
     });
     setMessenger(newMessenger);
 
-    connect(user, discoverer);
+    connect(thisUser, discoverer);
 
     return () => {
       disconnect(discoverer, newMessenger);
