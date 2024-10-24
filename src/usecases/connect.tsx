@@ -30,63 +30,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-"use client"
 
+import IDiscoverer from "@/entities/idiscoverer";
+import IMessenger from "@/entities/imessenger";
 import User from "@/entities/user";
-import React from "react";
 
-const styles = {
-  content: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center'
-  },
-  name: {
-    display: 'inline',
-    marginBottom: '2em',
-  },
-  solo: {
-    display: 'inline'
-  },
-  users: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
-    textAlign: 'center'
-  }
-} as const;
+export function connect(user: User, discoverer: IDiscoverer) {
+  discoverer.join(user);
+}
 
-type Props = {
-  users: User[],
-  user: User,
-  onUserClicked: (srcUser: User, clickedUser: User) => void
-};
-
-export default function Users({ users, user, onUserClicked }: Props) {
-
-  return (
-    <>
-      <div style={styles.content}>
-        <p style={styles.name}>Your user name is <strong>{user.name}</strong></p>
-        {
-          1 >= users.length ? (
-            <p style={styles.solo}> Waiting for more users to connect... </p>
-          ) : (
-            <ul style={styles.users}>
-              {
-                users.map((otherUser: User, index: number) => {
-                  if (otherUser.name !== user.name) {
-                    return (<li style={styles.user} key={index} onClick={() => { onUserClicked(user, otherUser); }} >{otherUser.name}</li>);
-                  } else {
-                    return null;
-                  }
-                })
-              }
-            </ul>
-          )
-        }
-
-      </div>
-    </>
-  );
+export function disconnect(discoverer: IDiscoverer, messenger: IMessenger) {
+  discoverer.leave()
+  messenger.disconnect();
 }

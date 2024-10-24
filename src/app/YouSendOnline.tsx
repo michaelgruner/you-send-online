@@ -41,6 +41,7 @@ import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
 import Messenger from "@/adapters/supabase/messenger";
 import generateName from '@/entities/namer';
+import { connect, disconnect } from '@/usecases/connect';
 
 type Props = {
   children: React.ReactNode;
@@ -50,31 +51,29 @@ export default function YouSendOnline({ children }: Props) {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
   const [messenger, setMessenger] = React.useState<IMessenger | null>(null);
-  const [discoverer, setDiscoverer] = React.useState<IDiscoverer | null>(null);
 
   React.useEffect(() => {
     const thisUser: User = {
       name: generateName(),
       online_since: new Date()
     };
+    setUser(thisUser);
 
-    const newDiscoverer: IDiscoverer = new Discoverer(
+    const discoverer: IDiscoverer = new Discoverer(
       (users: User[]) => { console.log('Users joined: ', users); },
       (users: User[]) => { console.log('Users left: ', users); },
       (users: User[]) => { setUsers(users); }
     );
-    setDiscoverer(newDiscoverer);
 
-    setUser(thisUser);
-    newDiscoverer?.join(thisUser);
-
-    setMessenger(new Messenger(thisUser, (from: User, message: string) => {
+    const newMessenger: IMessenger = new Messenger(thisUser, (from: User, message: string) => {
       alert(`New message received from ${from.name}:\n\n${message}`);
-    }));
+    });
+    setMessenger(newMessenger);
+
+    connect(user, discoverer);
 
     return () => {
-      discoverer?.leave();
-      messenger?.disconnect();
+      disconnect(discoverer, newMessenger);
     };
   }, []);
 
