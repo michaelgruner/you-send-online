@@ -30,17 +30,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-'use client'
-
-import react from 'react'
+"use client"
 
 import User from "@/entities/user";
-import IDiscoverer from "@/entities/idiscoverer";
-import Discoverer from "@/adapters/supabase/discoverer";
-import IMessenger from "@/entities/imessenger";
-import Messenger from "@/adapters/supabase/messenger";
-import generateName from '@/entities/namer';
+import React from "react";
 
 const styles = {
   content: {
@@ -63,39 +56,13 @@ const styles = {
   }
 } as const;
 
-export default function Users() {
-  const [users, setUsers] = react.useState<User[]>([]);
-  const [user, setUser] = react.useState<User>({ name: 'pending...', online_since: new Date() });
-  const [messenger, setMessenger] = react.useState<IMessenger | null>(null);
+type Props = {
+  users: User[],
+  user: User,
+  onUserClicked: (srcUser: User, clickedUser: User) => void
+};
 
-  react.useEffect(() => {
-    const thisUser: User = {
-      name: generateName(),
-      online_since: new Date()
-    };
-
-    const discoverer: IDiscoverer = new Discoverer(
-      (users: User[]) => { console.log('Users joined: ', users); },
-      (users: User[]) => { console.log('Users left: ', users); },
-      (users: User[]) => { setUsers(users); }
-    );
-
-    setUser(thisUser);
-    discoverer.join(thisUser);
-
-    setMessenger(new Messenger(thisUser, (from: User, message: string) => {
-      console.log(`Received message from ${from.name}: ${message}`);
-    }));
-
-    return () => {
-      discoverer.leave();
-      messenger?.disconnect();
-    };
-  }, []);
-
-  const sayHi = (to: User) => {
-    messenger?.sendMessage(to, `Greetings from ${user.name}`);
-  }
+export default function Users({ users, user, onUserClicked }: Props) {
 
   return (
     <>
@@ -109,7 +76,7 @@ export default function Users() {
               {
                 users.map((otherUser: User, index: number) => {
                   if (otherUser.name !== user.name) {
-                    return (<li key={index} onClick={() => { sayHi(otherUser); }}>{otherUser.name}</li>);
+                    return (<li key={index} onClick={() => { onUserClicked(user, otherUser); }} >{otherUser.name}</li>);
                   } else {
                     return null;
                   }

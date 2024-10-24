@@ -33,7 +33,9 @@
 
 import styles from "./page.module.css";
 
+
 import Users from "./Users";
+import YouSendOnline from "./YouSendOnline";
 
 export default function Home() {
 
@@ -48,7 +50,9 @@ export default function Home() {
             Send files between devices instantly and securely
           </p>
         </div>
-        <Users />
+        <YouSendOnline>
+          <Users />
+        </YouSendOnline>
       </div>
       <footer className={styles.footer}>
         <p>&copy; 2024. Made with &hearts; by <a href="mailto:me@mgruner.com">me@mgruner.com</a></p>

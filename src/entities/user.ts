@@ -37,3 +37,10 @@ type User = {
   name: string;
   online_since: Date;
 };
+
+export function createDefault () {
+  return {
+    name: 'pending',
+    online_since: new Date()
+  };
+}
