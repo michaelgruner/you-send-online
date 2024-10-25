@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2024, Michael Gruner <me at mgruner.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,16 +31,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default User;
+import User from "@/entities/user";
 
-type User = {
-  name: string;
-  online_since: Date;
+export type OnMessageCallback = (from: User, message: string) => void;
+
+interface IMessenger {
+  onMessage: OnMessageCallback;
+  sendMessage(to: User, message: string): void;
+  disconnect(): void;
 };
 
-export function createDefault () {
-  return {
-    name: 'pending',
-    online_since: new Date()
-  };
-}
+export default IMessenger;

@@ -30,48 +30,76 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-'use client'
-
-import react from 'react'
+"use client"
 
 import User from "@/entities/user";
-import IDiscoverer from "@/entities/idiscoverer";
-import Discoverer from "@/adapters/supabase/discoverer";
+import React from "react";
 
 const styles = {
-  users: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
+  content: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center'
+  },
+  name: {
+    marginBottom: '2em',
+  },
+  nameAccent: {
+    fontWeight: 'bold',
+  },
+  solo: {
+    display: 'inline'
+  },
+  users: {
+    display: 'flex',
+    flexDirection: 'column',
+    overflowY: 'auto',
+    listStyleType: 'none',
+    padding: '0',
+    margin: '0',
+    width: '50%',
+    borderRadius: '10px',
+  },
+  user: {
+    cursor: 'pointer',
+    backgroundColor: 'var(--color-secondary)',
+    padding: '0.5em',
+    textAlign: 'center',
+    border: '1px solid #ddd',
   }
 } as const;
 
-export default function Users() {
-  const [users, setUsers] = react.useState<User[]>([]);
+type Props = {
+  users: User[],
+  user: User,
+  onUserClicked: (srcUser: User, clickedUser: User) => void
+};
 
-  react.useEffect(() => {
-    let discoverer: IDiscoverer = new Discoverer((users: User[]) => { console.log('Users joined: ', users); },
-      (users: User[]) => { console.log('Users left: ', users); },
-      (users: User[]) => { setUsers(users); });
-
-    discoverer.join({ name: "Michael", online_since: new Date() });
-
-    return () => { discoverer.leave(); };
-  }, []);
+export default function Users({ users, user, onUserClicked }: Props) {
 
   return (
     <>
-      <ul style={styles.users}>
+      <div style={styles.content}>
+        <p style={styles.name}>Your user name is <span style={styles.nameAccent}>{user.name}</span></p>
         {
-          users.map((user: User, index: number) => {
-            return (<li key={index} >{`${user.name} (${user.online_since})`}</li>);
-          })
+          1 >= users.length ? (
+            <p style={styles.solo}> Waiting for more users to connect... </p>
+          ) : (
+            <ul style={styles.users}>
+              {
+                users.map((otherUser: User, index: number) => {
+                  if (otherUser.name !== user.name) {
+                    return (<li style={styles.user} key={index} onClick={() => { onUserClicked(user, otherUser); }} >{otherUser.name}</li>);
+                  } else {
+                    return null;
+                  }
+                })
+              }
+            </ul>
+          )
         }
-      </ul>
+
+      </div>
     </>
   );
 }

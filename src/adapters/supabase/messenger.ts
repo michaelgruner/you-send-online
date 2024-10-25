@@ -31,16 +31,62 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default User;
+import IMessenger, { OnMessageCallback } from "@/entities/imessenger";
+import User from "@/entities/user";
+import client from './client'
 
-type User = {
-  name: string;
-  online_since: Date;
+type Payload = {
+  from: User;
+  message: string;
 };
 
-export function createDefault () {
-  return {
-    name: 'pending',
-    online_since: new Date()
-  };
-}
+type BroadcastEvent = {
+  event: string;
+  type: string;
+  payload: Payload;
+};
+
+class Messenger implements IMessenger {
+  onMessage: OnMessageCallback;
+
+  sendMessage(to: User, message: string): void {
+    const otherRoom = client.channel(to.name);
+    otherRoom.send({
+      type: 'broadcast',
+      event: 'message',
+      payload: {
+        from: this.user,
+        message: message
+      }
+    });
+  }
+
+  constructor(user: User, onMessage: OnMessageCallback) {
+    this.onMessage = onMessage;
+    this.user = user;
+
+    this.room = client.channel(this.user.name);
+
+    this.room
+      .on(
+        'broadcast',
+        { event: 'message' },
+        (payload) => this.onMessageInternal(payload as any)
+      )
+      .subscribe();
+  }
+
+  disconnect() : void {
+    this.room.unsubscribe();
+  }
+
+  private user: User;
+  private room;
+
+  private onMessageInternal (event: BroadcastEvent) {
+    this.onMessage(event.payload.from, event.payload.message);
+  }
+
+};
+
+export default Messenger;

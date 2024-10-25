@@ -31,16 +31,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default User;
+import IDiscoverer from "@/entities/idiscoverer";
+import IMessenger from "@/entities/imessenger";
+import User from "@/entities/user";
 
-type User = {
-  name: string;
-  online_since: Date;
-};
+export function connect(user: User, discoverer: IDiscoverer) {
+  discoverer.join(user);
+}
 
-export function createDefault () {
-  return {
-    name: 'pending',
-    online_since: new Date()
-  };
+export function disconnect(discoverer: IDiscoverer, messenger: IMessenger) {
+  discoverer.leave()
+  messenger.disconnect();
 }

@@ -31,16 +31,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default User;
+import { uniqueNamesGenerator, Config, adjectives, colors, animals, languages } from 'unique-names-generator';
 
-type User = {
-  name: string;
-  online_since: Date;
-};
-
-export function createDefault () {
-  return {
-    name: 'pending',
-    online_since: new Date()
+export default function generateName(): string {
+  const config: Config = {
+    dictionaries: [adjectives, colors, animals, languages],
+    separator: '-',
+    length: 3,
+    seed: new Date().toISOString(),
   };
+
+  return uniqueNamesGenerator(config);
 }

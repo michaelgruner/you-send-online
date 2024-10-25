@@ -31,16 +31,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-export default User;
+import { createClient } from '@supabase/supabase-js'
 
-type User = {
-  name: string;
-  online_since: Date;
-};
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-export function createDefault () {
-  return {
-    name: 'pending',
-    online_since: new Date()
-  };
-}
+const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+export default client;

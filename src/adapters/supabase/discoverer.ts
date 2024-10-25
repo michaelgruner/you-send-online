@@ -34,10 +34,7 @@
 import IDiscoverer, { OnJoinCallback, OnLeaveCallback, OnSyncCallback, CHANNEL } from "@/entities/idiscoverer";
 import User from "@/entities/user";
 
-import { createClient } from '@supabase/supabase-js'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+import client from './client';
 
 class Discoverer implements IDiscoverer {
   onJoin: OnJoinCallback;
@@ -68,8 +65,7 @@ class Discoverer implements IDiscoverer {
     this.onLeave = onLeave;
     this.onSync = onSync;
 
-    this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    this.room = this.supabase.channel(CHANNEL);
+    this.room = client.channel(CHANNEL);
 
     this.room
       .on('presence', { event: 'sync' }, () => {
@@ -89,7 +85,6 @@ class Discoverer implements IDiscoverer {
       });
   }
 
-  private supabase;
   private room;
 
   private onEvent(presences: User[]): User[] {

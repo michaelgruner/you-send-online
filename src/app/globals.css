@@ -93,3 +93,14 @@ p, h1, h2, h3, h4, h5, h6 {
 /*********************************
  * CSS Reset
  ********************************/
+
+/* Color pallete */
+:root {
+    --color-primary: #D3E0EA;
+    --color-secondary: #F6F5F5;
+    --color-accent: #1687A7;
+    --color-accent1: var(--color-accent);
+    --color-accent2: #276678;
+
+    --transition: 0.3s;
+}
