@@ -43,11 +43,10 @@ import Messenger from "@/adapters/supabase/messenger";
 import generateName from '@/entities/namer';
 import { connect, disconnect } from '@/usecases/connect';
 
-type Props = {
-  children: React.ReactNode;
-}
+import Users from './Users';
 
-export default function YouSendOnline({ children }: Props) {
+
+export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
   const [messenger, setMessenger] = React.useState<IMessenger | null>(null);
@@ -81,16 +80,9 @@ export default function YouSendOnline({ children }: Props) {
     messenger?.sendMessage(clickedUser, `You've been greeted by ${srcUser.name}!`);
   };
 
-  const childrenWithProps = React.Children.map(children, (child) => {
-    if (React.isValidElement(child)) {
-      return React.cloneElement(child as React.ReactElement, { users, user, onUserClicked });
-    }
-    return child;
-  });
-
   return (
     <>
-      {childrenWithProps}
+      <Users users={users} user={user} onUserClicked={onUserClicked} />
     </>
   );
 }
