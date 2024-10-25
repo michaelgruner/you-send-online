@@ -40,12 +40,6 @@ type Payload = {
   message: string;
 };
 
-type BroadcastEvent = {
-  event: string;
-  type: string;
-  payload: Payload;
-};
-
 class Messenger implements IMessenger {
   onMessage: OnMessageCallback;
 
@@ -71,7 +65,7 @@ class Messenger implements IMessenger {
       .on(
         'broadcast',
         { event: 'message' },
-        (payload) => this.onMessageInternal(payload as any)
+        (event) => this.onMessageInternal(event.payload)
       )
       .subscribe();
   }
@@ -83,8 +77,8 @@ class Messenger implements IMessenger {
   private user: User;
   private room;
 
-  private onMessageInternal (event: BroadcastEvent) {
-    this.onMessage(event.payload.from, event.payload.message);
+  private onMessageInternal (payload: Payload) {
+    this.onMessage(payload.from, payload.message);
   }
 
 };
