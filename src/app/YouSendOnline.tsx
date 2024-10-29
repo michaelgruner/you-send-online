@@ -40,6 +40,8 @@ import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
 import Messenger from "@/adapters/supabase/messenger";
+import IProtocol, { IChannel } from '@/entities/iprotocol';
+import Protocol from '@/adapters/webrtc/protocol';
 import generateName from '@/entities/namer';
 import { connect, disconnect } from '@/usecases/connect';
 
@@ -50,6 +52,7 @@ export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
   const [messenger, setMessenger] = React.useState<IMessenger | null>(null);
+  const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
 
   React.useEffect(() => {
     const thisUser: User = {
@@ -64,10 +67,11 @@ export default function YouSendOnline() {
       (users: User[]) => { setUsers(users); }
     );
 
-    const newMessenger: IMessenger = new Messenger(thisUser, (from: User, message: string) => {
-      alert(`New message received from ${from.name}:\n\n${message}`);
-    });
+    const newMessenger: IMessenger = new Messenger(thisUser, null);
     setMessenger(newMessenger);
+
+    const newProtocol : IProtocol = new Protocol(newMessenger);
+    setProtocol(newProtocol);
 
     connect(thisUser, discoverer);
 
@@ -77,7 +81,15 @@ export default function YouSendOnline() {
   }, []);
 
   const onUserClicked = (srcUser: User, clickedUser: User) => {
-    messenger?.sendMessage(clickedUser, `You've been greeted by ${srcUser.name}!`);
+    console.log("User clicked", clickedUser);
+    protocol?.handshake(clickedUser, (data: ArrayBuffer) => {
+      console.log("Data received: ", new TextDecoder().decode(data));
+    }).then((channel: IChannel) => {
+      console.log("Data channel ready!");
+      channel.send(new TextEncoder().encode(`Hola soy ${srcUser.name}`).buffer);
+    }).catch(() => {
+      console.error("Unable to open data channel");
+    });
   };
 
   return (

@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2024, Michael Gruner <me at mgruner.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,58 +31,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import IMessenger, { OnMessageCallback } from "@/entities/imessenger";
-import User from "@/entities/user";
-import client from './client'
+import IMessenger from "./imessenger";
+import User from "./user";
 
-type Payload = {
-  from: User;
-  message: string;
+export type OnChannelMessageCallback = (data: ArrayBuffer) => void;
+
+export interface IChannel {
+  send(data: ArrayBuffer) : void;
 };
 
-class Messenger implements IMessenger {
-  onMessage: OnMessageCallback | null | undefined;
-
-  sendMessage(to: User, message: string): void {
-    const otherRoom = client.channel(to.name);
-    otherRoom.send({
-      type: 'broadcast',
-      event: 'message',
-      payload: {
-        from: this.user,
-        message: message
-      }
-    });
-  }
-
-  constructor(user: User, onMessage: OnMessageCallback | null | undefined) {
-    this.onMessage = onMessage;
-    this.user = user;
-
-    this.room = client.channel(this.user.name);
-
-    this.room
-      .on(
-        'broadcast',
-        { event: 'message' },
-        (event) => this.onMessageInternal(event.payload)
-      )
-      .subscribe();
-  }
-
-  disconnect() : void {
-    this.room.unsubscribe();
-  }
-
-  private user: User;
-  private room;
-
-  private onMessageInternal (payload: Payload) {
-    if (this.onMessage) {
-      this.onMessage(payload.from, payload.message);
-    }
-  }
-
+interface IProtocol {
+  readonly messenger : IMessenger;
+  handshake(user: User, onChannelMessageCallback : OnChannelMessageCallback | null) : Promise<IChannel>;
 };
 
-export default Messenger;
+export default IProtocol;

@@ -36,7 +36,7 @@ import User from "@/entities/user";
 export type OnMessageCallback = (from: User, message: string) => void;
 
 interface IMessenger {
-  onMessage: OnMessageCallback;
+  onMessage: OnMessageCallback | null;
   sendMessage(to: User, message: string): void;
   disconnect(): void;
 };
