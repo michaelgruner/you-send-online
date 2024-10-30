@@ -70,7 +70,9 @@ export default function YouSendOnline() {
     const newMessenger: IMessenger = new Messenger(thisUser, null);
     setMessenger(newMessenger);
 
-    const newProtocol : IProtocol = new Protocol(newMessenger);
+    const newProtocol: IProtocol = new Protocol(newMessenger, (data: ArrayBuffer) => {
+      console.log("Data received: ", new TextDecoder().decode(data));
+    });
     setProtocol(newProtocol);
 
     connect(thisUser, discoverer);
@@ -82,9 +84,7 @@ export default function YouSendOnline() {
 
   const onUserClicked = (srcUser: User, clickedUser: User) => {
     console.log("User clicked", clickedUser);
-    protocol?.handshake(clickedUser, (data: ArrayBuffer) => {
-      console.log("Data received: ", new TextDecoder().decode(data));
-    }).then((channel: IChannel) => {
+    protocol?.handshake(clickedUser).then((channel: IChannel) => {
       console.log("Data channel ready!");
       channel.send(new TextEncoder().encode(`Hola soy ${srcUser.name}`).buffer);
     }).catch(() => {

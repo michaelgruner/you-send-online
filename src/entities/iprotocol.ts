@@ -42,7 +42,8 @@ export interface IChannel {
 
 interface IProtocol {
   readonly messenger : IMessenger;
-  handshake(user: User, onChannelMessageCallback : OnChannelMessageCallback | null) : Promise<IChannel>;
+  readonly onChannelMessageCallback: OnChannelMessageCallback;
+  handshake(user: User) : Promise<IChannel>;
 };
 
 export default IProtocol;

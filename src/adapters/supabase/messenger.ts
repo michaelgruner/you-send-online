@@ -41,7 +41,7 @@ type Payload = {
 };
 
 class Messenger implements IMessenger {
-  onMessage: OnMessageCallback | null | undefined;
+  onMessage: OnMessageCallback | null;
 
   sendMessage(to: User, message: string): void {
     const otherRoom = client.channel(to.name);
@@ -53,9 +53,10 @@ class Messenger implements IMessenger {
         message: message
       }
     });
+    console.log("Sent message!");
   }
 
-  constructor(user: User, onMessage: OnMessageCallback | null | undefined) {
+  constructor(user: User, onMessage: OnMessageCallback | null) {
     this.onMessage = onMessage;
     this.user = user;
 
@@ -67,7 +68,7 @@ class Messenger implements IMessenger {
         { event: 'message' },
         (event) => this.onMessageInternal(event.payload)
       )
-      .subscribe();
+      .subscribe((status) => {if (status !== 'SUBSCRIBED') return null; console.log(`Subscribed to ${this.user.name}`);});
   }
 
   disconnect() : void {
