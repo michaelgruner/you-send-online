@@ -32,14 +32,15 @@
  */
 
 import IDiscoverer from "@/entities/idiscoverer";
-import IMessenger from "@/entities/imessenger";
+import IProtocol from "@/entities/iprotocol";
 import User from "@/entities/user";
 
-export function connect(user: User, discoverer: IDiscoverer) {
+export function connect(user: User, discoverer: IDiscoverer, protocol: IProtocol) {
   discoverer.join(user);
+  protocol.connect();
 }
 
-export function disconnect(discoverer: IDiscoverer, messenger: IMessenger) {
+export function disconnect(discoverer: IDiscoverer, protocol: IProtocol) {
   discoverer.leave()
-  messenger.disconnect();
+  protocol.disconnect();
 }

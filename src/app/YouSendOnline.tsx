@@ -40,6 +40,8 @@ import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
 import Messenger from "@/adapters/supabase/messenger";
+import IProtocol, { IChannel } from '@/entities/iprotocol';
+import Protocol from '@/adapters/webrtc/protocol';
 import generateName from '@/entities/namer';
 import { connect, disconnect } from '@/usecases/connect';
 
@@ -49,7 +51,7 @@ import Users from './Users';
 export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
-  const [messenger, setMessenger] = React.useState<IMessenger | null>(null);
+  const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
 
   React.useEffect(() => {
     const thisUser: User = {
@@ -64,20 +66,25 @@ export default function YouSendOnline() {
       (users: User[]) => { setUsers(users); }
     );
 
-    const newMessenger: IMessenger = new Messenger(thisUser, (from: User, message: string) => {
-      alert(`New message received from ${from.name}:\n\n${message}`);
+    const messenger: IMessenger = new Messenger(thisUser, null);
+    const newProtocol: IProtocol = new Protocol(messenger, (data: ArrayBuffer) => {
+      console.log("Data received: ", new TextDecoder().decode(data));
     });
-    setMessenger(newMessenger);
+    setProtocol(newProtocol);
 
-    connect(thisUser, discoverer);
+    connect(thisUser, discoverer, newProtocol);
 
     return () => {
-      disconnect(discoverer, newMessenger);
+      disconnect(discoverer, newProtocol);
     };
   }, []);
 
   const onUserClicked = (srcUser: User, clickedUser: User) => {
-    messenger?.sendMessage(clickedUser, `You've been greeted by ${srcUser.name}!`);
+    protocol?.handshake(clickedUser).then((channel: IChannel) => {
+      channel.send(new TextEncoder().encode(`Hi! I'm ${srcUser.name}`).buffer);
+    }).catch((e) => {
+      console.error("Unable to open data channel", e);
+    });
   };
 
   return (

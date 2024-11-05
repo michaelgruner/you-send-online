@@ -33,21 +33,17 @@
 
 import IMessenger, { OnMessageCallback } from "@/entities/imessenger";
 import User from "@/entities/user";
-import client from './client'
+import client, { RealtimeChannel } from './client'
 
 type Payload = {
   from: User;
   message: string;
 };
 
-type BroadcastEvent = {
-  event: string;
-  type: string;
-  payload: Payload;
-};
-
 class Messenger implements IMessenger {
-  onMessage: OnMessageCallback;
+  onMessage: OnMessageCallback | null;
+  private user: User;
+  private room?: RealtimeChannel;
 
   sendMessage(to: User, message: string): void {
     const otherRoom = client.channel(to.name);
@@ -61,30 +57,32 @@ class Messenger implements IMessenger {
     });
   }
 
-  constructor(user: User, onMessage: OnMessageCallback) {
+  constructor(user: User, onMessage: OnMessageCallback | null) {
     this.onMessage = onMessage;
     this.user = user;
+  }
 
+  connect(): void {
     this.room = client.channel(this.user.name);
-
     this.room
       .on(
         'broadcast',
         { event: 'message' },
-        (payload) => this.onMessageInternal(payload as any)
+        (event) => this.onMessageInternal(event.payload)
       )
       .subscribe();
   }
 
-  disconnect() : void {
-    this.room.unsubscribe();
+  disconnect() {
+    if (this.room) {
+      client.removeChannel(this.room);
+    }
   }
 
-  private user: User;
-  private room;
-
-  private onMessageInternal (event: BroadcastEvent) {
-    this.onMessage(event.payload.from, event.payload.message);
+  private onMessageInternal(payload: Payload) {
+    if (this.onMessage) {
+      this.onMessage(payload.from, payload.message);
+    }
   }
 
 };

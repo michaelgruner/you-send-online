@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2024, Michael Gruner <me at mgruner.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,21 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { createClient, RealtimeChannel as Channel } from '@supabase/supabase-js';
+import IMessenger from "./imessenger";
+import User from "./user";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+export type OnChannelMessageCallback = (data: ArrayBuffer) => void;
 
-const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+export interface IChannel {
+  send(data: ArrayBuffer) : void;
+};
 
-export default client;
-export type RealtimeChannel = Channel;
+interface IProtocol {
+  readonly messenger : IMessenger;
+  readonly onChannelMessageCallback: OnChannelMessageCallback;
+  handshake(user: User) : Promise<IChannel>;
+  connect() : void;
+  disconnect() : void;
+};
+
+export default IProtocol;
