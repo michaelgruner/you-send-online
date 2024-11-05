@@ -54,35 +54,73 @@ class WebRTCChannel implements IChannel {
 class Protocol implements IProtocol {
   readonly messenger: IMessenger;
   readonly onChannelMessageCallback: OnChannelMessageCallback;
-  private peerConnection: RTCPeerConnection;
+
+  private peerConnection: RTCPeerConnection | null = null;
   private prematureIceCandidates: RTCIceCandidate[] = [];
   private peer: User | null = null;
+  private localChannel: RTCDataChannel | null = null;
+  private remoteChannel: RTCDataChannel | null = null;
+
 
   constructor(messenger: IMessenger, onChannelMessageCallback: OnChannelMessageCallback) {
     this.messenger = messenger;
     this.onChannelMessageCallback = onChannelMessageCallback;
+
+    this.reset();
+  }
+
+  reset() {
+    if (this.localChannel) {
+      this.localChannel.close();
+      this.localChannel = null;
+    }
+
+    if (this.remoteChannel) {
+      this.remoteChannel.close();
+      this.remoteChannel = null;
+    }
+
+    if (this.peerConnection) {
+      this.peerConnection.close();
+      this.peerConnection = null;
+    }
+
     this.peerConnection = new RTCPeerConnection();
+    this.prematureIceCandidates = [];
+    this.peer = null;
+
+    this.peerConnection.ondatachannel = event => {
+      this.remoteChannel = event.channel;
+      this.remoteChannel.onmessage = event => {
+        this.onChannelMessageCallback(event.data as ArrayBuffer);
+      };
+    };
+
+    this.peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        const message: SignalMessage = {
+          type: "candidate",
+          candidate: JSON.stringify(event.candidate),
+        };
+        this.messenger.sendMessage(this.peer!, JSON.stringify(message));
+      }
+    };
 
     this.messenger.onMessage = async (user: User, smessage: string) => {
       this.peer = user;
 
-      console.log("Remote message received: ", smessage);
       const message: SignalMessage = JSON.parse(smessage);
 
-      // We received an offer, configure it and send an answer
       if (message.type === "offer") {
         const remoteDescription = new RTCSessionDescription({
           type: "offer",
           sdp: message.sdp,
         });
-        await this.peerConnection.setRemoteDescription(remoteDescription);
-        console.log("New remote description!", remoteDescription);
+        await this.peerConnection!.setRemoteDescription(remoteDescription);
 
-        // Create an answer
-        const answer = await this.peerConnection.createAnswer();
-        await this.peerConnection.setLocalDescription(answer);
+        const answer = await this.peerConnection!.createAnswer();
+        await this.peerConnection!.setLocalDescription(answer);
 
-        // Send the answer back to the initiator
         const answerMessage: SignalMessage = {
           type: "answer",
           sdp: answer.sdp!,
@@ -94,72 +132,53 @@ class Protocol implements IProtocol {
           type: "answer",
           sdp: message.sdp,
         });
-        await this.peerConnection.setRemoteDescription(remoteDescription);
-        console.log("New remote description!", remoteDescription);
+        await this.peerConnection!.setRemoteDescription(remoteDescription);
 
         this.absorbPrematureIceCandidates();
       } else if (message.type === "candidate") {
         const candidate = new RTCIceCandidate(JSON.parse(message.candidate));
 
-        // We are not allowed to install candidates if we still don't
-        // have a remote description. Mark them as premature for later.
-        if (this.peerConnection.remoteDescription) {
-          this.peerConnection.addIceCandidate(candidate);
-          console.log("New remote candidate!", candidate);
+        if (this.peerConnection!.remoteDescription) {
+          this.peerConnection!.addIceCandidate(candidate);
         } else {
           this.prematureIceCandidates.push(candidate);
         }
       }
     };
-    console.log(`Callback installed: ${this.messenger.onMessage}`);
-
-    // Called if someone opened a data channel on us
-    this.peerConnection.ondatachannel = event => {
-      const remoteChannel = event.channel;
-      remoteChannel.onmessage = event => {
-        this.onChannelMessageCallback(event.data as ArrayBuffer);
-      };
-    };
-
-    // Called when a new local ICE candidate is generated
-    this.peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log("New local candidate!", event.candidate);
-        const message: SignalMessage = {
-          type: "candidate",
-          candidate: JSON.stringify(event.candidate),
-        };
-        this.messenger.sendMessage(this.peer, JSON.stringify(message));
-      }
-    };
   }
 
-  absorbPrematureIceCandidates() {
-    this.prematureIceCandidates.forEach(candidate => this.peerConnection.addIceCandidate(candidate));
+  private absorbPrematureIceCandidates() {
+    this.prematureIceCandidates.forEach(candidate => this.peerConnection!.addIceCandidate(candidate));
     this.prematureIceCandidates = [];
   }
 
   async handshake(user: User): Promise<IChannel> {
+    this.reset();
+
     this.peer = user;
+    //this.peerConnection = new RTCPeerConnection();
 
-    const localChannel = this.peerConnection.createDataChannel("data", { ordered: true });
+    this.localChannel = this.peerConnection!.createDataChannel("data", { ordered: true });
 
-    return new Promise<IChannel>(async (resolve, reject) => {
-      // Resolve the promise when the local channel opens
-      localChannel.onopen = () => resolve(new WebRTCChannel(localChannel));
-      localChannel.onclose = () => { console.log("Closed data channel"); };
-      localChannel.onclosing = () => { console.log("Closing data channel"); };
-      localChannel.onerror = reject;
+    return new Promise<IChannel>((resolve, reject) => {
+      this.localChannel!.onopen = () => resolve(new WebRTCChannel(this.localChannel!));
+      this.localChannel!.onerror = reject;
 
-      // Create and send offer
-      const offer = await this.peerConnection.createOffer();
-      await this.peerConnection.setLocalDescription(offer);
-      const offerMessage: SignalMessage = {
-        type: "offer",
-        sdp: offer.sdp!,
-      };
-      this.messenger.sendMessage(this.peer!, JSON.stringify(offerMessage));
-      console.log("New local description!", offer);
+      // Use a self-invoking async function to handle async/await outside the Promise executor
+      (async () => {
+        try {
+          // Create and send offer
+          const offer = await this.peerConnection!.createOffer();
+          await this.peerConnection!.setLocalDescription(offer);
+          const offerMessage: SignalMessage = {
+            type: "offer",
+            sdp: offer.sdp!,
+          };
+          this.messenger.sendMessage(this.peer!, JSON.stringify(offerMessage));
+        } catch (error) {
+          reject(error);
+        }
+      })();
     });
   }
 }

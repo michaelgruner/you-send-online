@@ -53,7 +53,6 @@ class Messenger implements IMessenger {
         message: message
       }
     });
-    console.log("Sent message!");
   }
 
   constructor(user: User, onMessage: OnMessageCallback | null) {
@@ -68,17 +67,17 @@ class Messenger implements IMessenger {
         { event: 'message' },
         (event) => this.onMessageInternal(event.payload)
       )
-      .subscribe((status) => {if (status !== 'SUBSCRIBED') return null; console.log(`Subscribed to ${this.user.name}`);});
+      .subscribe();
   }
 
-  disconnect() : void {
+  disconnect(): void {
     this.room.unsubscribe();
   }
 
   private user: User;
   private room;
 
-  private onMessageInternal (payload: Payload) {
+  private onMessageInternal(payload: Payload) {
     if (this.onMessage) {
       this.onMessage(payload.from, payload.message);
     }
