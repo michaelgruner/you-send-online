@@ -44,6 +44,8 @@ interface IProtocol {
   readonly messenger : IMessenger;
   readonly onChannelMessageCallback: OnChannelMessageCallback;
   handshake(user: User) : Promise<IChannel>;
+  connect() : void;
+  disconnect() : void;
 };
 
 export default IProtocol;

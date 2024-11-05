@@ -51,7 +51,6 @@ import Users from './Users';
 export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
-  const [messenger, setMessenger] = React.useState<IMessenger | null>(null);
   const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
 
   React.useEffect(() => {
@@ -67,28 +66,24 @@ export default function YouSendOnline() {
       (users: User[]) => { setUsers(users); }
     );
 
-    const newMessenger: IMessenger = new Messenger(thisUser, null);
-    setMessenger(newMessenger);
-
-    const newProtocol: IProtocol = new Protocol(newMessenger, (data: ArrayBuffer) => {
+    const messenger: IMessenger = new Messenger(thisUser, null);
+    const newProtocol: IProtocol = new Protocol(messenger, (data: ArrayBuffer) => {
       console.log("Data received: ", new TextDecoder().decode(data));
     });
     setProtocol(newProtocol);
 
-    connect(thisUser, discoverer);
+    connect(thisUser, discoverer, newProtocol);
 
     return () => {
-      disconnect(discoverer, newMessenger);
+      disconnect(discoverer, newProtocol);
     };
   }, []);
 
   const onUserClicked = (srcUser: User, clickedUser: User) => {
-    console.log("User clicked", clickedUser);
     protocol?.handshake(clickedUser).then((channel: IChannel) => {
-      console.log("Data channel ready!");
-      channel.send(new TextEncoder().encode(`Hola soy ${srcUser.name}`).buffer);
-    }).catch(() => {
-      console.error("Unable to open data channel");
+      channel.send(new TextEncoder().encode(`Hi! I'm ${srcUser.name}`).buffer);
+    }).catch((e) => {
+      console.error("Unable to open data channel", e);
     });
   };
 

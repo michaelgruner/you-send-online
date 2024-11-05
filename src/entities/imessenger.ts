@@ -38,6 +38,7 @@ export type OnMessageCallback = (from: User, message: string) => void;
 interface IMessenger {
   onMessage: OnMessageCallback | null;
   sendMessage(to: User, message: string): void;
+  connect(): void;
   disconnect(): void;
 };
 

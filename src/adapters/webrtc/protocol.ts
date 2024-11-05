@@ -65,11 +65,9 @@ class Protocol implements IProtocol {
   constructor(messenger: IMessenger, onChannelMessageCallback: OnChannelMessageCallback) {
     this.messenger = messenger;
     this.onChannelMessageCallback = onChannelMessageCallback;
-
-    this.reset();
   }
 
-  reset() {
+  disconnect() {
     if (this.localChannel) {
       this.localChannel.close();
       this.localChannel = null;
@@ -85,6 +83,10 @@ class Protocol implements IProtocol {
       this.peerConnection = null;
     }
 
+    this.messenger.disconnect();
+  }
+
+  connect() {
     this.peerConnection = new RTCPeerConnection();
     this.prematureIceCandidates = [];
     this.peer = null;
@@ -145,6 +147,13 @@ class Protocol implements IProtocol {
         }
       }
     };
+
+    this.messenger.connect();
+  }
+
+  reset() {
+    this.disconnect();
+    this.connect();
   }
 
   private absorbPrematureIceCandidates() {
@@ -156,8 +165,6 @@ class Protocol implements IProtocol {
     this.reset();
 
     this.peer = user;
-    //this.peerConnection = new RTCPeerConnection();
-
     this.localChannel = this.peerConnection!.createDataChannel("data", { ordered: true });
 
     return new Promise<IChannel>((resolve, reject) => {

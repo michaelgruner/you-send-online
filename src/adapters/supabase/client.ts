@@ -31,7 +31,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, RealtimeChannel as Channel } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -39,3 +39,4 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export default client;
+export type RealtimeChannel = Channel;
