@@ -53,6 +53,8 @@ export default function YouSendOnline() {
   const [user, setUser] = React.useState<User>(createDefault());
   const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
 
   React.useEffect(() => {
     const thisUser: User = {
@@ -87,12 +89,20 @@ export default function YouSendOnline() {
   };
 
   const onUserClicked = (_: User, clickedUser: User) => {
-    sendFiles(clickedUser, protocol, selectedFiles);
+    try {
+      sendFiles(clickedUser, protocol, selectedFiles);
+    } catch (e) {
+      console.error(e);
+    }
+    setSelectedFiles([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
     <>
-      <input type="file" multiple onChange={onFileChange} />
+      <input type="file" multiple onChange={onFileChange} ref={fileInputRef} />
       <Users users={users} user={user} onUserClicked={onUserClicked} />
     </>
   );
