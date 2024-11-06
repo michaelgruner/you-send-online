@@ -40,18 +40,21 @@ import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
 import Messenger from "@/adapters/supabase/messenger";
-import IProtocol, { IChannel } from '@/entities/iprotocol';
+import IProtocol from '@/entities/iprotocol';
 import Protocol from '@/adapters/webrtc/protocol';
 import generateName from '@/entities/namer';
 import { connect, disconnect } from '@/usecases/connect';
+import { sendFiles, downloadFile } from '@/usecases/sendfiles';
 
 import Users from './Users';
-
 
 export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
   const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
+  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
 
   React.useEffect(() => {
     const thisUser: User = {
@@ -68,7 +71,7 @@ export default function YouSendOnline() {
 
     const messenger: IMessenger = new Messenger(thisUser, null);
     const newProtocol: IProtocol = new Protocol(messenger, (data: ArrayBuffer) => {
-      console.log("Data received: ", new TextDecoder().decode(data));
+      downloadFile(data);
     });
     setProtocol(newProtocol);
 
@@ -79,16 +82,27 @@ export default function YouSendOnline() {
     };
   }, []);
 
-  const onUserClicked = (srcUser: User, clickedUser: User) => {
-    protocol?.handshake(clickedUser).then((channel: IChannel) => {
-      channel.send(new TextEncoder().encode(`Hi! I'm ${srcUser.name}`).buffer);
-    }).catch((e) => {
-      console.error("Unable to open data channel", e);
-    });
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+    }
+  };
+
+  const onUserClicked = (_: User, clickedUser: User) => {
+    try {
+      sendFiles(clickedUser, protocol, selectedFiles);
+    } catch (e) {
+      console.error(e);
+    }
+    setSelectedFiles([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
     <>
+      <input type="file" multiple onChange={onFileChange} ref={fileInputRef} />
       <Users users={users} user={user} onUserClicked={onUserClicked} />
     </>
   );
