@@ -36,15 +36,15 @@
 import React from 'react'
 
 import User, { createDefault } from "@/entities/user";
-import RemoteFile from "@/entities/remotefile";
 import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
 import Messenger from "@/adapters/supabase/messenger";
-import IProtocol, { IChannel } from '@/entities/iprotocol';
+import IProtocol from '@/entities/iprotocol';
 import Protocol from '@/adapters/webrtc/protocol';
 import generateName from '@/entities/namer';
 import { connect, disconnect } from '@/usecases/connect';
+import { sendFiles, downloadFile } from '@/usecases/sendfiles';
 
 import Users from './Users';
 
@@ -69,19 +69,7 @@ export default function YouSendOnline() {
 
     const messenger: IMessenger = new Messenger(thisUser, null);
     const newProtocol: IProtocol = new Protocol(messenger, (data: ArrayBuffer) => {
-      const remoteFile = new RemoteFile();
-      const file = remoteFile.toFile(data);
-      const url = URL.createObjectURL(file);
-      const userConfirmed = window.confirm(`Do you want to download '${file.name}' (${file.size})?`);
-      if (userConfirmed) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-      URL.revokeObjectURL(url);
+      downloadFile(data);
     });
     setProtocol(newProtocol);
 
@@ -98,25 +86,8 @@ export default function YouSendOnline() {
     }
   };
 
-  const onUserClicked = (srcUser: User, clickedUser: User) => {
-    protocol?.handshake(clickedUser).then((channel: IChannel) => {
-      selectedFiles.forEach((file) => {
-        const remoteFile = new RemoteFile();
-
-        remoteFile.fromFile(file)
-          .then((data: ArrayBuffer) => {
-            channel.send(data);
-          })
-          .catch(() => {
-            console.error(`Unable to read ${file.name}`);
-          });
-
-        // Remove the file from the selectedFiles list after sending
-        setSelectedFiles(prevFiles => prevFiles.filter(f => f !== file));
-      });
-    }).catch((e) => {
-      console.error("Unable to open data channel", e);
-    });
+  const onUserClicked = (_: User, clickedUser: User) => {
+    sendFiles(clickedUser, protocol, selectedFiles);
   };
 
   return (
