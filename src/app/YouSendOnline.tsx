@@ -36,6 +36,7 @@
 import React from 'react'
 
 import User, { createDefault } from "@/entities/user";
+import RemoteFile from "@/entities/remotefile";
 import IDiscoverer from "@/entities/idiscoverer";
 import Discoverer from "@/adapters/supabase/discoverer";
 import IMessenger from "@/entities/imessenger";
@@ -47,11 +48,11 @@ import { connect, disconnect } from '@/usecases/connect';
 
 import Users from './Users';
 
-
 export default function YouSendOnline() {
   const [users, setUsers] = React.useState<User[]>([]);
   const [user, setUser] = React.useState<User>(createDefault());
   const [protocol, setProtocol] = React.useState<IProtocol | null>(null);
+  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
 
   React.useEffect(() => {
     const thisUser: User = {
@@ -68,7 +69,19 @@ export default function YouSendOnline() {
 
     const messenger: IMessenger = new Messenger(thisUser, null);
     const newProtocol: IProtocol = new Protocol(messenger, (data: ArrayBuffer) => {
-      console.log("Data received: ", new TextDecoder().decode(data));
+      const remoteFile = new RemoteFile();
+      const file = remoteFile.toFile(data);
+      const url = URL.createObjectURL(file);
+      const userConfirmed = window.confirm(`Do you want to download '${file.name}' (${file.size})?`);
+      if (userConfirmed) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      URL.revokeObjectURL(url);
     });
     setProtocol(newProtocol);
 
@@ -79,9 +92,28 @@ export default function YouSendOnline() {
     };
   }, []);
 
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setSelectedFiles(Array.from(event.target.files));
+    }
+  };
+
   const onUserClicked = (srcUser: User, clickedUser: User) => {
     protocol?.handshake(clickedUser).then((channel: IChannel) => {
-      channel.send(new TextEncoder().encode(`Hi! I'm ${srcUser.name}`).buffer);
+      selectedFiles.forEach((file) => {
+        const remoteFile = new RemoteFile();
+
+        remoteFile.fromFile(file)
+          .then((data: ArrayBuffer) => {
+            channel.send(data);
+          })
+          .catch(() => {
+            console.error(`Unable to read ${file.name}`);
+          });
+
+        // Remove the file from the selectedFiles list after sending
+        setSelectedFiles(prevFiles => prevFiles.filter(f => f !== file));
+      });
     }).catch((e) => {
       console.error("Unable to open data channel", e);
     });
@@ -89,6 +121,7 @@ export default function YouSendOnline() {
 
   return (
     <>
+      <input type="file" multiple onChange={onFileChange} />
       <Users users={users} user={user} onUserClicked={onUserClicked} />
     </>
   );
